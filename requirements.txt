@@ -1,8 +1,7 @@
-beautifulsoup4>=4.12.0
-requests>=2.31.0
-lxml>=4.9.0
-google-generativeai>=0.3.0
-urllib3>=2.0.0
-html5lib>=1.1
-fake-useragent>=1.4.0
-python-dotenv>=1.0.0
+beautifulsoup4==4.13.4
+requests==2.32.4
+lxml==6.0.0
+google-generativeai==0.8.5
+fake-useragent==2.2.0
+python-dotenv==1.1.1
+validators==0.35.0  
