@@ -4,11 +4,39 @@
 import streamlit as st
 import logging
 import traceback
+import sys
+import subprocess
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 from typing import Dict, Any, Optional
 import time
 
+# Production dependency verification
+def verify_dependencies():
+    """Verify critical dependencies are available."""
+    try:
+        import bs4
+        st.success("✅ BeautifulSoup4 loaded successfully")
+        return True
+    except ImportError as e:
+        st.error(f"❌ Critical dependency missing: {e}")
+        st.error("Please check requirements.txt and redeploy.")
+        
+        # Show environment info for debugging
+        with st.expander("Environment Debug Info"):
+            try:
+                result = subprocess.run([sys.executable, "-m", "pip", "list"], 
+                                      capture_output=True, text=True)
+                st.code(result.stdout)
+            except Exception as debug_error:
+                st.error(f"Debug info unavailable: {debug_error}")
+        
+        st.stop()
+        return False
+
+# Verify dependencies before app execution
+if __name__ == "__main__":
+    verify_dependencies()
 # Import custom modules
 try:
     import extractor
