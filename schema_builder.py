@@ -47,16 +47,26 @@ def build_schema(data):
     if data.get('dateModified'):
         schema['dateModified'] = format_date(data.get('dateModified'))
 
-    # Author
+    # Author - handle both dict and string formats
     author_data = data.get('author')
-    if author_data and author_data.get('name') and author_data.get('url'):
-        schema['author'] = {
-            "@type": "Person",
-            "@id": f"{author_data.get('url')}#Person",
-            "name": author_data.get('name'),
-            "url": author_data.get('url')
-        }
-        # knowsAbout could be added here if entity linking was implemented
+    if author_data:
+        if isinstance(author_data, dict):
+            author_name = author_data.get('name', '')
+            author_url = author_data.get('url', '')
+        elif isinstance(author_data, str):
+            author_name = author_data
+            author_url = post_url  # Use post URL as fallback
+        else:
+            author_name = ''
+            author_url = ''
+        
+        if author_name:
+            schema['author'] = {
+                "@type": "Person",
+                "@id": f"{author_url}#Person",
+                "name": author_name,
+                "url": author_url
+            }
 
     # Publisher
     publisher_data = data.get('publisher')
@@ -74,14 +84,22 @@ def build_schema(data):
                 "url": logo_url
             }
 
-    # Featured Image
+    # Featured Image - handle both dict and string formats
     image_data = data.get('image')
-    if image_data and image_data.get('url'):
-        schema['image'] = {
-            "@type": "ImageObject",
-            "@id": image_data.get('url'),
-            "url": image_data.get('url')
-        }
+    if image_data:
+        if isinstance(image_data, dict):
+            image_url = image_data.get('url')
+        elif isinstance(image_data, str):
+            image_url = image_data
+        else:
+            image_url = None
+        
+        if image_url:
+            schema['image'] = {
+                "@type": "ImageObject",
+                "@id": image_url,
+                "url": image_url
+            }
 
     # isPartOf
     is_part_of_data = data.get('isPartOf')
