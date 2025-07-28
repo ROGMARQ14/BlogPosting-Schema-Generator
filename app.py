@@ -1,7 +1,6 @@
 # Main Streamlit application file
 
 import streamlit as st
-from urllib.parse import urlparse
 import extractor
 import analyzer
 import schema_builder
@@ -56,14 +55,16 @@ with st.sidebar:
         """
         1.  **Enter the full URL** of a blog post you want to analyze.
         2.  Click the **"Generate Schema"** button.
-        3.  The agent will fetch the page, analyze its content, and build a comprehensive JSON-LD schema.
+        3.  The agent will fetch the page, analyze its content, and build a 
+            comprehensive JSON-LD schema.
         4.  The generated schema will appear in the main panel, ready to be copied.
         """
     )
     st.header("Security")
     st.success(
         """
-        To use the keyword generation feature, add your Gemini API key to your Streamlit secrets.
+        To use the keyword generation feature, add your Gemini API key to your 
+        Streamlit secrets.
         
         Create a `.streamlit/secrets.toml` file with:
         
@@ -84,41 +85,36 @@ url = st.text_input(
 if st.button("Generate Schema", key="generate_button"):
     if url:
         # Validate URL
-        if not utils.is_valid_url(url):
+        if not utils.URLValidator.is_valid_url(url):
             st.error("Please enter a valid URL (e.g., https://example.com/...)")
         else:
             try:
                 with st.spinner("Analyzing page... This may take a moment."):
                     # Stage 1: Data Extraction
                     st.write("### Stage 1: Extracting Data...")
-                    soup = utils.fetch_url_content(url)
-                    if soup:
-                        extracted_data = extractor.extract_all_data(soup, url)
-                        st.json(extracted_data) # Display extracted data for transparency
+                    extracted_data = extractor.extract(url)
+                    st.json(extracted_data)
 
-                        # Stage 2: Content Analysis
-                        st.write("### Stage 2: Analyzing Content...")
-                        analyzed_data = analyzer.analyze_content(extracted_data)
-                        st.json({
-                            "wordCount": analyzed_data.get("wordCount"),
-                            "keywords": analyzed_data.get("keywords")
-                        }) # Display analysis results
+                    # Stage 2: Content Analysis
+                    st.write("### Stage 2: Analyzing Content...")
+                    analyzed_data = analyzer.analyze_content(extracted_data)
+                    st.json({
+                        "wordCount": analyzed_data.get("wordCount"),
+                        "keywords": analyzed_data.get("keywords")
+                    })
 
-                        # Combine data
-                        full_data = {**extracted_data, **analyzed_data}
+                    # Combine data
+                    full_data = {**extracted_data, **analyzed_data}
 
-                        # Stage 3 & 4: Schema Assembly and Finalization
-                        st.write("### Stage 3 & 4: Building & Finalizing Schema...")
-                        final_schema_script = schema_builder.build_schema(full_data)
+                    # Stage 3 & 4: Schema Assembly and Finalization
+                    st.write("### Stage 3 & 4: Building & Finalizing Schema...")
+                    final_schema_script = schema_builder.build_schema(full_data)
 
-                        st.success("✅ Schema Generated Successfully!")
-                        st.code(final_schema_script, language="json")
-
-                    else:
-                        st.error("Could not fetch content from the URL. Please check the URL and try again.")
+                    st.success("✅ Schema Generated Successfully!")
+                    st.code(final_schema_script, language="json")
 
             except Exception as e:
                 st.error(f"An unexpected error occurred: {e}")
-                st.exception(e) # Provides a full traceback for debugging
+                st.exception(e)
     else:
         st.warning("Please enter a URL to generate the schema.")
