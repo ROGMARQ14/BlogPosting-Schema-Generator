@@ -504,6 +504,8 @@ def _assess_content_quality(analysis_result: Dict) -> str:
             return 'medium'
         else:
             return 'basic'
+
+    
             
     except Exception:
         return 'basic'
