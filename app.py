@@ -1,165 +1,124 @@
-"""
-Streamlit BlogPosting Schema Generator App
------------------------------------------
-Generates SEO-ready BlogPosting JSON-LD from any public blog URL.
-"""
+# Main Streamlit application file
 
-import json
-import logging
-import sys
-from typing import Dict, Any
 import streamlit as st
-from bs4 import BeautifulSoup
+from urllib.parse import urlparse
+import extractor
+import analyzer
+import schema_builder
+import utils
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s – %(message)s",
-    handlers=[logging.StreamHandler(sys.stdout)],
-)
-logger = logging.getLogger("blogposting-app")
-
+# --- Streamlit Page Configuration ---
 st.set_page_config(
-    page_title="BlogPosting Schema Generator",
-    page_icon="📝",
+    page_title="Schema Architect AI",
+    page_icon="🤖",
     layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# Import internal modules with error handling
-try:
-    import extractor
-    import analyzer  
-    import schema_builder
-    import utils
-except ModuleNotFoundError as exc:
-    st.error(f"Missing required module: {exc}")
-    st.error("Please ensure all required modules (extractor.py, analyzer.py, schema_builder.py, utils.py) are present in the same directory.")
-    st.stop()
+# --- App Styling ---
+st.markdown("""
+<style>
+    .stApp {
+        background-color: #f0f2f6;
+    }
+    .stButton>button {
+        background-color: #4CAF50;
+        color: white;
+        border-radius: 12px;
+        padding: 10px 24px;
+        border: none;
+        transition: background-color 0.3s;
+    }
+    .stButton>button:hover {
+        background-color: #45a049;
+    }
+    .stTextInput>div>div>input {
+        border-radius: 8px;
+    }
+    h1, h2, h3 {
+        color: #1E2A38;
+    }
+</style>
+""", unsafe_allow_html=True)
 
-# Streamlit UI
-st.title("📝 BlogPosting Schema Generator")
 
-with st.form("url_input_form"):
-    target_url = st.text_input(
-        "Enter the full URL of the blog post you'd like to convert:",
-        placeholder="https://example.com/my-blog-post",
-    ).strip()
-    submitted = st.form_submit_button("Generate Schema")
+# --- Application UI ---
 
-if submitted:
-    if not target_url:
-        st.warning("Please enter a valid, public URL.")
-        st.stop()
+st.title("🤖 Schema Architect AI")
+st.subheader("Your expert agent for generating `BlogPosting` schema.")
 
-    # Extract content - Fixed function name detection
-    with st.spinner("Fetching & parsing article…"):
-        try:
-            # Auto-detect the correct extraction function
-            if hasattr(extractor, 'extract_content'):
-                raw_data: Dict[str, Any] = extractor.extract_content(target_url)
-            elif hasattr(extractor, 'extract_blog_data'):
-                raw_data: Dict[str, Any] = extractor.extract_blog_data(target_url)
-            elif hasattr(extractor, 'extract'):
-                raw_data: Dict[str, Any] = extractor.extract(target_url)
-            else:
-                # List available functions for debugging
-                available_functions = [name for name in dir(extractor) 
-                                     if callable(getattr(extractor, name)) and not name.startswith('_')]
-                st.error(f"❌ Extractor module function not found. Available functions: {available_functions}")
-                st.error("Please ensure your extractor.py has one of these functions: extract_content, extract_blog_data, or extract")
-                st.stop()
-            
-            st.success("✅ Content extracted")
-        except Exception as exc:
-            logger.exception(exc)
-            st.error(f"Extraction failed: {exc}")
-            st.stop()
+st.markdown("---")
 
-    # Analyze content
-    with st.spinner("Analyzing article…"):
-        try:
-            analysis: Dict[str, Any] = analyzer.analyze_content(raw_data)
-            st.success("✅ Analysis complete")
-        except Exception as exc:
-            logger.exception(exc)
-            st.error(f"Analysis failed: {exc}")
-            st.stop()
-
-    # Build BlogPosting schema
-    with st.spinner("Building BlogPosting schema…"):
-        try:
-            schema_json: Dict[str, Any] = schema_builder.build_schema(
-                raw_data, analysis
-            )
-            pretty_schema = json.dumps(schema_json, indent=2, ensure_ascii=False)
-            st.success("✅ Schema ready")
-        except Exception as exc:
-            logger.exception(exc)
-            st.error(f"Schema generation failed: {exc}")
-            st.stop()
-def build_schema(content_data: Dict, analysis_data: Dict = None) -> Dict:
-    """
-    Module-level function for backward compatibility with app.py
-    
-    Args:
-        content_data (Dict): Extracted content data  
-        analysis_data (Dict): Analysis results
+# --- Sidebar for Instructions ---
+with st.sidebar:
+    st.header("How to Use")
+    st.info(
+        """
+        1.  **Enter the full URL** of a blog post you want to analyze.
+        2.  Click the **"Generate Schema"** button.
+        3.  The agent will fetch the page, analyze its content, and build a comprehensive JSON-LD schema.
+        4.  The generated schema will appear in the main panel, ready to be copied.
+        """
+    )
+    st.header("Security")
+    st.success(
+        """
+        To use the keyword generation feature, add your Gemini API key to your Streamlit secrets.
         
-    Returns:
-        Dict: Complete Schema.org JSON-LD structure
-    """
-    try:
-        # Map data formats for SchemaBuilder class
-        mapped_content = {
-            'title': content_data.get('headline', ''),
-            'content': content_data.get('bodyText', ''),
-            'url': content_data.get('url', ''),
-            'description': content_data.get('description', ''),
-            'author': content_data.get('author', ''),
-            'publish_date': content_data.get('datePublished', ''),
-            'image_url': content_data.get('image', ''),
-            'word_count': content_data.get('wordCount', 0)
-        }
+        Create a `.streamlit/secrets.toml` file with:
         
-        # Add keywords from analysis if available
-        if analysis_data and analysis_data.get('keywords'):
-            mapped_content['keywords'] = analysis_data['keywords']
+        `[api_keys]`
         
-        # Initialize builder and generate schema
-        builder = SchemaBuilder()
-        return builder.build_blogposting_schema(
-            mapped_content, 
-            analysis_data
-        )
-        
-    except Exception as e:
-        logger.error(f"Schema generation failed: {str(e)}")
-        # Return minimal valid schema as fallback
-        return {
-            "@context": "https://schema.org",
-            "@type": "BlogPosting",
-            "headline": content_data.get('headline', 'Blog Post'),
-            "url": content_data.get('url', ''),
-            "author": {
-                "@type": "Person", 
-                "name": content_data.get('author', 'Unknown Author')
-            },
-            "publisher": {
-                "@type": "Organization",
-                "name": "Blog Publisher"
-            },
-            "datePublished": datetime.now(timezone.utc).isoformat()
-        }
-        
-    # Output results
-    st.subheader("Generated BlogPosting JSON-LD")
-    st.code(pretty_schema, language="json")
-
-    st.download_button(
-        "Download schema.json",
-        data=pretty_schema,
-        file_name="blogposting-schema.json",
-        mime="application/json",
+        `gemini = "YOUR_API_KEY_HERE"`
+        """
     )
 
-    st.toast("All done 🎉 – copy the JSON-LD into `<head>` of your article!")
+
+# --- Main Application Logic ---
+url = st.text_input(
+    "Enter the Blog Post URL:",
+    placeholder="https://example.com/blog/my-awesome-post",
+    key="url_input"
+)
+
+if st.button("Generate Schema", key="generate_button"):
+    if url:
+        # Validate URL
+        if not utils.is_valid_url(url):
+            st.error("Please enter a valid URL (e.g., https://example.com/...)")
+        else:
+            try:
+                with st.spinner("Analyzing page... This may take a moment."):
+                    # Stage 1: Data Extraction
+                    st.write("### Stage 1: Extracting Data...")
+                    soup = utils.fetch_url_content(url)
+                    if soup:
+                        extracted_data = extractor.extract_all_data(soup, url)
+                        st.json(extracted_data) # Display extracted data for transparency
+
+                        # Stage 2: Content Analysis
+                        st.write("### Stage 2: Analyzing Content...")
+                        analyzed_data = analyzer.analyze_content(extracted_data)
+                        st.json({
+                            "wordCount": analyzed_data.get("wordCount"),
+                            "keywords": analyzed_data.get("keywords")
+                        }) # Display analysis results
+
+                        # Combine data
+                        full_data = {**extracted_data, **analyzed_data}
+
+                        # Stage 3 & 4: Schema Assembly and Finalization
+                        st.write("### Stage 3 & 4: Building & Finalizing Schema...")
+                        final_schema_script = schema_builder.build_schema(full_data)
+
+                        st.success("✅ Schema Generated Successfully!")
+                        st.code(final_schema_script, language="json")
+
+                    else:
+                        st.error("Could not fetch content from the URL. Please check the URL and try again.")
+
+            except Exception as e:
+                st.error(f"An unexpected error occurred: {e}")
+                st.exception(e) # Provides a full traceback for debugging
+    else:
+        st.warning("Please enter a URL to generate the schema.")
