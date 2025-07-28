@@ -8,6 +8,38 @@ from typing import Dict, Any, Optional, List
 import re
 import utils
 
+# Add this to your extractor.py file
+def extract(url):
+    """
+    Main extraction function - wrapper for existing functionality
+    """
+    # If you have extract_content function, use it
+    if hasattr(sys.modules[__name__], 'extract_content'):
+        return extract_content(url)
+    
+    # If you have extract_blog_data function, use it  
+    elif hasattr(sys.modules[__name__], 'extract_blog_data'):
+        return extract_blog_data(url)
+        
+    # Otherwise implement basic extraction here
+    else:
+        import requests
+        from bs4 import BeautifulSoup
+        
+        try:
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.content, 'html.parser')
+            
+            return {
+                'headline': soup.find('title').get_text() if soup.find('title') else '',
+                'bodyText': soup.get_text(),
+                'url': url,
+                'description': soup.find('meta', attrs={'name': 'description'})['content'] if soup.find('meta', attrs={'name': 'description'}) else ''
+            }
+        except Exception as e:
+            raise Exception(f"Failed to extract content: {e}")
+
 # Configure logging
 logger = logging.getLogger(__name__)
 
