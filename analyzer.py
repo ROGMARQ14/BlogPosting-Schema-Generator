@@ -7,7 +7,7 @@ import re
 import logging
 import json
 from bs4 import BeautifulSoup
-from typing import Dict, List, Set, Optional, Any
+from typing import Dict, List, Set, Optional, Any, Union
 from collections import Counter
 import pandas as pd
 import numpy as np
