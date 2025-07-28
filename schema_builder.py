@@ -6,16 +6,20 @@ import requests
 from fake_useragent import UserAgent
 from bs4 import BeautifulSoup
 
+
 def format_date(date_string):
     """Attempts to parse and format a date string into YYYY-MM-DD."""
     if not date_string:
         return ""
     try:
         # Handles ISO 8601 format (e.g., 2023-10-27T10:00:00+00:00)
-        return datetime.fromisoformat(date_string.replace("Z", "+00:00")).strftime('%Y-%m-%d')
+        return datetime.fromisoformat(
+            date_string.replace("Z", "+00:00")
+        ).strftime('%Y-%m-%d')
     except ValueError:
         # Add other common date formats to parse here if needed
-        return date_string # Fallback to original if parsing fails
+        return date_string  # Fallback to original if parsing fails
+
 
 def build_schema(data):
     """
@@ -100,7 +104,11 @@ def build_schema(data):
         schema['keywords'] = data.get('keywords')
 
     # Finalize by wrapping in script tag with pretty printing
-    final_script = f'<script type="application/ld+json">\n{json.dumps(schema, indent=4)}\n</script>'
+    final_script = (
+        f'<script type="application/ld+json">\n'
+        f'{json.dumps(schema, indent=4)}\n'
+        f'</script>'
+    )
 
     return final_script
 
@@ -112,10 +120,13 @@ def get_wikipedia_and_wikidata_links(topic):
     """
     ua = UserAgent()
     headers = {'User-Agent': ua.random}
-    
+
     # Search for Wikipedia link
     try:
-        wikipedia_url = f"https://en.wikipedia.org/w/api.php?action=opensearch&search={topic}&limit=1&namespace=0&format=json"
+        wikipedia_url = (
+            "https://en.wikipedia.org/w/api.php"
+            "?action=opensearch&search={}&limit=1&namespace=0&format=json"
+        ).format(topic)
         response = requests.get(wikipedia_url, headers=headers)
         response.raise_for_status()
         wiki_data = response.json()
@@ -135,7 +146,7 @@ def get_wikipedia_and_wikidata_links(topic):
                 wikidata_link = wikidata_element['href']
         except requests.exceptions.RequestException:
             pass
-            
+
     return {
         'wikipedia': wikipedia_link,
         'wikidata': wikidata_link
