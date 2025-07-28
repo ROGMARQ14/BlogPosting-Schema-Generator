@@ -55,7 +55,7 @@ def _fallback_extract(url: str) -> Dict[str, Any]:
     """
     try:
         # Validate URL
-        if not utils.validate_url(url):
+        if not utils.URLValidator.is_valid_url(url):
             raise ValueError(f"Invalid URL format: {url}")
         
         # Set up user agent for requests
