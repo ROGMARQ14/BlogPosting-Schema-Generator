@@ -153,6 +153,60 @@ class SchemaBuilder:
         
         return None
     
+    def build_schema(content_data: Dict, analysis_data: Dict = None) -> Dict:
+    """
+    Module-level function for backward compatibility with app.py
+    
+    Args:
+        content_data (Dict): Extracted content data  
+        analysis_data (Dict): Analysis results
+        
+    Returns:
+        Dict: Complete Schema.org JSON-LD structure
+    """
+    try:
+        # Map data formats for SchemaBuilder class
+        mapped_content = {
+            'title': content_data.get('headline', ''),
+            'content': content_data.get('bodyText', ''),
+            'url': content_data.get('url', ''),
+            'description': content_data.get('description', ''),
+            'author': content_data.get('author', ''),
+            'publish_date': content_data.get('datePublished', ''),
+            'image_url': content_data.get('image', ''),
+            'word_count': content_data.get('wordCount', 0)
+        }
+        
+        # Add keywords from analysis if available
+        if analysis_data and analysis_data.get('keywords'):
+            mapped_content['keywords'] = analysis_data['keywords']
+        
+        # Initialize builder and generate schema
+        builder = SchemaBuilder()
+        return builder.build_blogposting_schema(
+            mapped_content, 
+            analysis_data
+        )
+        
+    except Exception as e:
+        logger.error(f"Schema generation failed: {str(e)}")
+        # Return minimal valid schema as fallback
+        return {
+            "@context": "https://schema.org",
+            "@type": "BlogPosting",
+            "headline": content_data.get('headline', 'Blog Post'),
+            "url": content_data.get('url', ''),
+            "author": {
+                "@type": "Person", 
+                "name": content_data.get('author', 'Unknown Author')
+            },
+            "publisher": {
+                "@type": "Organization",
+                "name": "Blog Publisher"
+            },
+            "datePublished": datetime.now(timezone.utc).isoformat()
+        }
+    
     def _build_publisher_schema(self, site_config: Dict = None, url: str = '') -> Dict:
         """Build publisher schema."""
         # Extract domain from URL for fallback
