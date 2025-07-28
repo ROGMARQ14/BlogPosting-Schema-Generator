@@ -11,28 +11,41 @@ from urllib.parse import urlparse
 from typing import Dict, Any, Optional
 import time
 
-# Production dependency verification
-def verify_dependencies():
-    """Verify critical dependencies are available."""
+# Production environment validation
+def validate_deployment_environment():
+    """Validate that all critical dependencies are available."""
+    st.write("**🔍 Deployment Environment Diagnostics**")
+    
     try:
         import bs4
-        st.success("✅ BeautifulSoup4 loaded successfully")
+        st.success(f"✅ BeautifulSoup4 loaded successfully (v{bs4.__version__})")
+        
+        # Test core imports
+        from bs4 import BeautifulSoup
+        st.success("✅ BeautifulSoup import successful")
+        
         return True
     except ImportError as e:
-        st.error(f"❌ Critical dependency missing: {e}")
-        st.error("Please check requirements.txt and redeploy.")
+        st.error(f"❌ Critical dependency failure: {e}")
         
-        # Show environment info for debugging
-        with st.expander("Environment Debug Info"):
+        # Show installed packages for debugging
+        with st.expander("📋 Installed Packages Debug Info"):
             try:
-                result = subprocess.run([sys.executable, "-m", "pip", "list"], 
-                                      capture_output=True, text=True)
+                result = subprocess.run(
+                    [sys.executable, "-m", "pip", "list"], 
+                    capture_output=True, text=True, timeout=10
+                )
                 st.code(result.stdout)
             except Exception as debug_error:
-                st.error(f"Debug info unavailable: {debug_error}")
+                st.error(f"Package list unavailable: {debug_error}")
         
+        st.error("🛑 App cannot proceed without required dependencies")
         st.stop()
         return False
+
+# Validate before app execution
+if __name__ == "__main__":
+    validate_deployment_environment()
 
 # Verify dependencies before app execution
 if __name__ == "__main__":
